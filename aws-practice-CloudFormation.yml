@@ -106,8 +106,8 @@ Resources:
       Port: 3306
       StorageType: gp2
       BackupRetentionPeriod: 7
-      MasterUsername: root
-      MasterUserPassword: arisu1324
+      MasterUsername: --
+      MasterUserPassword: --
       PreferredBackupWindow: 18:09-18:39
       PreferredMaintenanceWindow: sun:16:41-sun:17:11
       DBName: MyDatabase
