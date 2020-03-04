@@ -1,0 +1,294 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  FirstVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: true
+      EnableDnsHostnames: false
+      Tags: 
+       - Key: Name
+         Value: PraVPC
+  subnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-subnet-public-1a
+  subnet2b:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: ap-northeast-1d
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-subnet-private-rds-1d
+  subnet3c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.6.0/24
+      AvailabilityZone: ap-northeast-1d
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-subnet-public-rds-1d
+  subnet4d:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.5.0/24
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-subnet-private-1a
+  igw0773a716556a868ad:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+       - Key: Name
+         Value: practice-aws
+  acl02ee2fec3963de89c:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref FirstVPC
+  rtb00a794ee8aa829389:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-068a6cefc24c301d2
+      InstanceType: t2.micro
+      KeyName: ec2
+      Monitoring: false
+      Tags:
+       - Key: Name
+         Value: practice-aws
+      NetworkInterfaces:
+       - DeleteOnTermination: true
+         Description: Primary network interface
+         DeviceIndex: 0
+         SubnetId: !Ref subnet1a
+         PrivateIpAddresses:
+          - PrivateIpAddress: 10.0.1.115
+            Primary: true
+         GroupSet: 
+          - !Ref sgpracticeawssg1apublic
+         AssociatePublicIpAddress: true
+  volume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      Size: 8
+      SnapshotId: snap-0bdffaa2da723d01c
+      VolumeType: gp2
+      Tags:
+       - Key: Name
+         Value: haranari      
+  rdspractice:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      DBInstanceClass: db.t2.micro
+      Port: 3306
+      StorageType: gp2
+      BackupRetentionPeriod: 7
+      MasterUsername: root
+      MasterUserPassword: arisu1324
+      PreferredBackupWindow: 18:09-18:39
+      PreferredMaintenanceWindow: sun:16:41-sun:17:11
+      DBName: MyDatabase
+      Engine: mysql
+      EngineVersion: 5.7.26
+      LicenseModel: general-public-license
+      DBSubnetGroupName: !Ref dbsubnetpracticeaws
+      VPCSecurityGroups: 
+       - !Ref sgpracticeawssg1aprivate
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Suspended
+  dbsubnetpracticeaws:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: practice-aws
+      SubnetIds: 
+        - !Ref subnet2b
+        - !Ref subnet4d
+  dbpgpracticeaws:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: practice-aws
+      Family: mysql5.7
+  sgpracticeawssg1dpublic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: practice-aws-sg-1d-public
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-sg-1d-public
+  sgpracticeawssg1dprivate:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: practice-aws-sg-1d-private
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-sg-1d-private
+  sgpracticeawssg1apublic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: practice-aws-sg-1a-public
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-sg-1a-public
+  sgpracticeawssg1aprivate:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: practice-aws-sg-1a-private
+      VpcId: !Ref FirstVPC
+      Tags:
+       - Key: Name
+         Value: practice-aws-sg-1a-private
+  acl5:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+  acl6:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+  subnetacl9:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+      SubnetId: !Ref subnet4d
+  subnetacl10:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+      SubnetId: !Ref subnet3c
+  subnetacl11:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+      SubnetId: !Ref subnet2b
+  subnetacl12:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref acl02ee2fec3963de89c
+      SubnetId: !Ref subnet1a
+  gw3:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref FirstVPC
+      InternetGatewayId: !Ref igw0773a716556a868ad
+  subnetroute3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rtb00a794ee8aa829389
+      SubnetId: !Ref subnet1a
+  route3:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref rtb00a794ee8aa829389
+      GatewayId: !Ref igw0773a716556a868ad
+    DependsOn: gw3
+  dchpassoc3:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      VpcId: !Ref FirstVPC
+      DhcpOptionsId: dopt-2e2f0a49
+  ingress11:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1dpublic
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+  ingress12:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1apublic
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+  ingress13:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1apublic
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: 157.112.170.34/32
+  ingress14:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1apublic
+      IpProtocol: tcp
+      FromPort: 3000
+      ToPort: 3000
+      CidrIp: 0.0.0.0/0
+  ingress15:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1aprivate
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      CidrIp: 0.0.0.0/0
+  egresss9:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1dpublic
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+  egresss10:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1dprivate
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+  egresss11:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1apublic
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+  egresss12:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref sgpracticeawssg1aprivate
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+Description: aws-practice
